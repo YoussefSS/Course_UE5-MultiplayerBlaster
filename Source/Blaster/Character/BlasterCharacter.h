@@ -15,6 +15,7 @@ public:
 	ABlasterCharacter();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -33,7 +34,17 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true")) // Allowing this variable to be BlueprintReadOnly even though it's private
 	class UWidgetComponent* OverheadWidget;
-public:	
 
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+	class AWeapon* OverlappingWeapon; // As soon as the value of OverlappingWeapon changes, it will replicate
+
+	/* RepNotifies CAN have a parameter, but it can only have a parameter of the input type of the variable that is being replicated
+	* Notice the AWeapon* input here, this input is the value of the variable before it got changed/replicated. So if it were set to null, we can still access the old value with the in pointer */
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AWeapon* LastWeapon); 
+
+public:	
+	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
+	void SetOverlappingWeapon(AWeapon* Weapon);
 
 };
