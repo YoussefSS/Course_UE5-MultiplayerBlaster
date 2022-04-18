@@ -25,12 +25,19 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	void SetAiming(bool bIsAiming);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetAiming(bool bIsAiming);
 
 private:
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
 
 	UPROPERTY(Replicated)
 	AWeapon* EquippedWeapon;
+
+	UPROPERTY(Replicated)
+	bool bAiming;
 
 public:	
 	

@@ -34,4 +34,6 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bWeaponEquipped = BlasterCharacter->IsWeaponEquipped(); // EquippedWeapon is replicated to all clients, so this will work for all clients
 
 	bIsCrouched = BlasterCharacter->bIsCrouched; // This variable is already replicated from the base Character class
+
+	bAiming = BlasterCharacter->IsAiming();
 }
