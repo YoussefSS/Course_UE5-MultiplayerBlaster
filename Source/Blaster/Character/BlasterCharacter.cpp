@@ -32,6 +32,8 @@ ABlasterCharacter::ABlasterCharacter()
 
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
+
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -65,6 +67,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("LookUp", this, &ABlasterCharacter::LookUp);
 
 	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ABlasterCharacter::EquipButtonPressed);
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ABlasterCharacter::CrouchButtonPressed);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -137,6 +140,19 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 	}
 }
 
+void ABlasterCharacter::CrouchButtonPressed()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch(); // Natively replicated
+	}
+	else
+	{
+		Crouch(); // Natively replicated
+	}
+	
+}
+
 // This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
@@ -150,12 +166,7 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 	// Setting the overlapping weapon with the new weapon, which will get replicated
 	OverlappingWeapon = Weapon;
 
-	/* Making sure we only show the widget on the character that's controlling the pawn, by making sure we are on the character that's controlling the pawn
-	* We know that this function is only called on the server, because it is called from OnSphereOverlap on AWeapon, which is only called from the server
-	* IsLocallyControlled ss only true on the character that is being controlled.
-	* So if we enter this if, we know we are on the character being controlled by the player that is hosting the game(ie the server)
-	* If that is the case, we know OverlappingWeapon will NOT be replicated to anyone because we have the COND_OwnerOnly condition set,
-	* and none of the clients will be owners of this character as it is locally controlled on the server
+	/* Since this function is only called on the server, then this next if statement is only called if we are on the pawn being controlled on the server
 	* In this case, all we need to do is show the pickup widget */
 	if (IsLocallyControlled())
 	{
@@ -184,6 +195,7 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 bool ABlasterCharacter::IsWeaponEquipped()
 {
+	// EquippedWeapon is replicated, so this will work for all clients
 	return (Combat && Combat->EquippedWeapon);
 }
 

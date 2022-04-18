@@ -32,4 +32,6 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bIsAccelerating = BlasterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0 ? true : false;
 
 	bWeaponEquipped = BlasterCharacter->IsWeaponEquipped(); // EquippedWeapon is replicated to all clients, so this will work for all clients
+
+	bIsCrouched = BlasterCharacter->bIsCrouched; // This variable is already replicated from the base Character class
 }

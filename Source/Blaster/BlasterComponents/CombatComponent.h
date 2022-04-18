@@ -20,9 +20,9 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
 
 	void EquipWeapon(AWeapon* WeaponToEquip);
+
 protected:
 	virtual void BeginPlay() override;
 
