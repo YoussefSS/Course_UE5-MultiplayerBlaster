@@ -16,8 +16,11 @@ class BLASTER_API UCombatComponent : public UActorComponent
 
 public:	
 	UCombatComponent();
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	friend class ABlasterCharacter;
+
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 
 	void EquipWeapon(AWeapon* WeaponToEquip);
 protected:
@@ -25,6 +28,8 @@ protected:
 
 private:
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
+
+	UPROPERTY(Replicated)
 	AWeapon* EquippedWeapon;
 
 public:	
