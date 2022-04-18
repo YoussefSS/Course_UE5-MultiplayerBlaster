@@ -109,9 +109,29 @@ void ABlasterCharacter::LookUp(float Value)
 
 void ABlasterCharacter::EquipButtonPressed()
 {
-	// Remember that this is called on any machine that presses the E key (server and client)
-	// Keep this in mind because things like equipping weapons should be done by the server
-	if (Combat && HasAuthority())
+	/* Remember that this is called on any machine that presses the E key(server and client)
+	/ Keep this in mind because things like equipping weapons should be done by the server*/
+
+
+	if (Combat)
+	{
+		if (HasAuthority())
+		{
+			Combat->EquipWeapon(OverlappingWeapon);
+		}
+		else
+		{
+			// We are the client, so call the RPC.
+			ServerEquipButtonPressed();
+		}
+		
+	}
+}
+
+void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
+{
+	// No need to check for authority because we know a server RPC will only be executed on a server
+	if (Combat)
 	{
 		Combat->EquipWeapon(OverlappingWeapon);
 	}
@@ -161,6 +181,7 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 		LastWeapon->ShowPickupWidget(false);
 	}
 }
+
 
 
 

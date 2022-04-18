@@ -5,6 +5,7 @@
 #include "Blaster/Weapon/Weapon.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Components/SphereComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -27,6 +28,7 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 }
 
+// Called from the server from BlasterCharacter
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
@@ -34,12 +36,17 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	// Attaching the weapon to a socket on our character
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+	// Attaching actors IS propagated to clients
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
 	if (HandSocket)
 	{
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
 
-	EquippedWeapon->SetOwner(Character);// Making the character the owner of the weapon, probably important for multiplayer
-	EquippedWeapon->ShowPickupWidget(false);
+	/* Making the character the owner of the weapon, we don't need to do this on the client, as SetOwner is propagated to clients
+	This is because inside it Owner is set which is ReplicatedUsing OnRep_Owner, which is a virtual function that we can override if we want*/
+	EquippedWeapon->SetOwner(Character);
+
+	
 }

@@ -48,6 +48,8 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UCombatComponent* Combat;
 
+	UFUNCTION(Server, Reliable)
+	void ServerEquipButtonPressed();
 public:	
 	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
 	void SetOverlappingWeapon(AWeapon* Weapon);
