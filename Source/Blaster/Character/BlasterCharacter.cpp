@@ -8,6 +8,7 @@
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Blaster/Weapon/Weapon.h"
+#include "Blaster/BlasterComponents/CombatComponent.h"
 
 ABlasterCharacter::ABlasterCharacter()
 {
@@ -28,6 +29,9 @@ ABlasterCharacter::ABlasterCharacter()
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
+
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	Combat->SetIsReplicated(true);
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -60,6 +64,17 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("Turn", this, &ABlasterCharacter::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &ABlasterCharacter::LookUp);
 
+	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ABlasterCharacter::EquipButtonPressed);
+}
+
+void ABlasterCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (Combat) // We know it will be initialize in this point, but just checking null for safety
+	{
+		Combat->Character = this; // Notice how we can acces the private variable Character, this is because this class is marked as a friend class in CombatComponent.h
+	}
 }
 
 void ABlasterCharacter::MoveForward(float Value)
@@ -92,29 +107,37 @@ void ABlasterCharacter::LookUp(float Value)
 	AddControllerPitchInput(Value);
 }
 
+void ABlasterCharacter::EquipButtonPressed()
+{
+	// Remember that this is called on any machine that presses the E key (server and client)
+	// Keep this in mind because things like equipping weapons should be done by the server
+	if (Combat && HasAuthority())
+	{
+		Combat->EquipWeapon(OverlappingWeapon);
+	}
+}
+
 // This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	/* Before setting the overlapping weapon, we check if the overlapping weapon is valid, and hide the pickup widget
-	* This handles the case of when we are the server as OnRep_OverlappingWeapon is not called on the server, so we don't hide the pickup widget 
-	* It's ok to not check if we are locally controlled here, because this will only be called on the server */
-	if (OverlappingWeapon)
+	* This handles the case of when we are the server as OnRep_OverlappingWeapon is not called on the server, so we don't hide the pickup widget */
+	if (OverlappingWeapon && IsLocallyControlled()) // We also check IsLocallyControlled, as if the server is overlapping with the weapon, and another client comes up and overlaps with it then end overlap, the widget will also be hidden on the server
 	{
 		OverlappingWeapon->ShowPickupWidget(false);
 	}
 
-
-	// Setting the overlapping weapon with the new weapon, which will get repol
+	// Setting the overlapping weapon with the new weapon, which will get replicated
 	OverlappingWeapon = Weapon;
 
 	/* Making sure we only show the widget on the character that's controlling the pawn, by making sure we are on the character that's controlling the pawn
 	* We know that this function is only called on the server, because it is called from OnSphereOverlap on AWeapon, which is only called from the server
 	* IsLocallyControlled ss only true on the character that is being controlled.
-	* So if we enter this if, we know we are on the character being controlled by the player that is hosting the game(ie the server) 
-	* If that is the case, we know OverlappingWeapon will NOT be replicated to anyone because we have the COND_OwnerOnly condition set, 
-	* and none of the clients will be owners of this character as it is locally controlled on the server 
+	* So if we enter this if, we know we are on the character being controlled by the player that is hosting the game(ie the server)
+	* If that is the case, we know OverlappingWeapon will NOT be replicated to anyone because we have the COND_OwnerOnly condition set,
+	* and none of the clients will be owners of this character as it is locally controlled on the server
 	* In this case, all we need to do is show the pickup widget */
-	if (IsLocallyControlled()) 
+	if (IsLocallyControlled())
 	{
 		// We show the widget (doing the same logic as in OnRep_OverlappingWeapon, so it is better to just call OnRep_OverlappingWeapon?)
 		if (OverlappingWeapon)

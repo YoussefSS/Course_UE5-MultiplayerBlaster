@@ -45,7 +45,8 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	class UWidgetComponent* PickupWidget; // This is just a widget with the text "E - Pick Up" on it
+
 public:	
-	
+	FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
 
 };

@@ -16,6 +16,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override; // This is the earliest time we can get access to a component
 
 protected:
 	virtual void BeginPlay() override;
@@ -24,6 +25,7 @@ protected:
 	void MoveRight(float Value);
 	void Turn(float Value);
 	void LookUp(float Value);
+	void EquipButtonPressed();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -42,6 +44,9 @@ private:
 	* Notice the AWeapon* input here, this input is the value of the variable before it got changed/replicated. So if it were set to null, we can still access the old value with the in pointer */
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon); 
+
+	UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* Combat;
 
 public:	
 	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
