@@ -4,6 +4,7 @@
 #include "BlasterAnimInstance.h"
 #include "BlasterCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
 {
@@ -36,4 +37,29 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bIsCrouched = BlasterCharacter->bIsCrouched; // This variable is already replicated from the base Character class
 
 	bAiming = BlasterCharacter->IsAiming();
+
+// OFFSET YAW FOR STRAFING
+	/* Which which direction we're aiming / our controlling is pointing at, and which direction we're moving
+	*  These 2 values will return the same value if we are looking and moving in the same direction 
+	*  With debug strings, we can see that these values are replicating on the controlling as well as simulating client. (Well, AimRotation only replicated when we move on simulatedProxy, but for Autonomous it works without moving) */
+	FRotator AimRotation = BlasterCharacter->GetBaseAimRotation(); // This is a global rotation, not local or depending on which direction we're moving in. It goes up to 180 then -180 to 0. It's like the rotation of our controller / the way the camera is facing
+	FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(BlasterCharacter->GetVelocity()); // Takes a direction vector and returns a rotation. It also goes up to 180 then -180 to 0. It's like the rotation the character is moving in. It is also global and corresponds to the same global location as the base aim rotation
+
+	/* We can get the delta between the two to set the animation values.
+	*  If we are looking straight ahead but holding down the A key and moving right, the delta would be 90 */
+	FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
+	DeltaRotation = FMath::RInterpTo(DeltaRotation, DeltaRot, DeltaTime, 6.f); // We use this instead of regular float interp/interp in blendspace because of the reasons described in UE5 Animation note. ie going instantly from -180 to 180, without interping to 0 first
+	YawOffset = DeltaRotation.Yaw;
+// END OFFSET YAW FOR STRAFING
+
+// LEAN
+	// The lean has to do with the character yaw rotation itself, and the rotation from the previous frame
+	CharacterRotationLastFrame = CharacterRotation;
+	CharacterRotation = BlasterCharacter->GetActorRotation();
+	const FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(CharacterRotation, CharacterRotationLastFrame);
+	const float Target = Delta.Yaw / DeltaTime; // Making the delta value bigger as it's very small, and also using DeltaTime so we're frame independant
+	const float Interp = FMath::FInterpTo(Lean, Target, DeltaTime, 6.f); // Interping so there is no jerking in our lean
+	Lean = FMath::Clamp(Interp, -90, 90);
+// END LEAN
+
 }

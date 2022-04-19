@@ -23,6 +23,8 @@ public:
 
 	void EquipWeapon(AWeapon* WeaponToEquip);
 
+	UFUNCTION()
+	void OnRep_EquippedWeapon();
 protected:
 	virtual void BeginPlay() override;
 	void SetAiming(bool bIsAiming);
@@ -33,7 +35,7 @@ protected:
 private:
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	AWeapon* EquippedWeapon;
 
 	UPROPERTY(Replicated)
