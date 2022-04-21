@@ -205,6 +205,15 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 
 	// We set pitch regardless of if we are running or not
 	AO_Pitch = GetBaseAimRotation().Pitch;
+	// Rotation is compressed to an unsigned int by UE when sent across the network, we fix this here
+	if (AO_Pitch > 90.f && !IsLocallyControlled()) // !IsLocallyControlled because this problem only occurs on other machines that receive the compressed rotation
+	{
+		// Map pitch from [270, 360) to [-90, 0)
+		FVector2D InRange(270.f, 360.f);
+		FVector2D OutRange(-90.f, 0.f);
+		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+
+	}
 }
 
 // This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
