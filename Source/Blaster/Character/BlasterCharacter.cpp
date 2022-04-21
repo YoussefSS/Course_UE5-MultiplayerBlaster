@@ -200,7 +200,7 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 	{
 		StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		AO_Yaw = 0.f;
-		bUseControllerRotationYaw = false;
+		bUseControllerRotationYaw = true;
 	}
 
 	// We set pitch regardless of if we are running or not
