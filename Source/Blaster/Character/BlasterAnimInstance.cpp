@@ -30,16 +30,12 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	Speed = Velocity.Size();
 
 	bIsInAir = BlasterCharacter->GetCharacterMovement()->IsFalling();
-
 	bIsAccelerating = BlasterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0 ? true : false;
-
 	bWeaponEquipped = BlasterCharacter->IsWeaponEquipped(); // EquippedWeapon is replicated to all clients, so this will work for all clients
-
 	EquippedWeapon = BlasterCharacter->GetEquippedWeapon();
-
 	bIsCrouched = BlasterCharacter->bIsCrouched; // This variable is already replicated from the base Character class
-
 	bAiming = BlasterCharacter->IsAiming();
+	TurningInPlace = BlasterCharacter->GetTurningInPlace();
 
 // OFFSET YAW FOR STRAFING
 	/* Which which direction we're aiming / our controlling is pointing at, and which direction we're moving
