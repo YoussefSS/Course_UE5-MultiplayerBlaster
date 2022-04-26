@@ -23,14 +23,18 @@ public:
 
 	void EquipWeapon(AWeapon* WeaponToEquip);
 
-	UFUNCTION()
-	void OnRep_EquippedWeapon();
+	
 protected:
 	virtual void BeginPlay() override;
 	void SetAiming(bool bIsAiming);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bIsAiming);
+
+	UFUNCTION()
+	void OnRep_EquippedWeapon();
+
+	void FireButtonPressed(bool bPressed);
 
 private:
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
@@ -47,6 +51,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float AimWalkSpeed;
 
+	bool bFireButtonPressed;
 public:	
 	
 
