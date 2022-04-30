@@ -63,6 +63,9 @@ private:
 	float AimWalkSpeed;
 
 	bool bFireButtonPressed;
+
+	FVector HitTarget; // Set every frame
+
 public:	
 	
 
