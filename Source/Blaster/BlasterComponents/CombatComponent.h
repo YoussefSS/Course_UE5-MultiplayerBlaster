@@ -36,6 +36,13 @@ protected:
 
 	void FireButtonPressed(bool bPressed);
 
+	UFUNCTION(Server, Reliable)
+	void ServerFire();
+
+	// If called from the server, Multicast RPCs will run on the server AND all clients
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFire();
+
 private:
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
 
