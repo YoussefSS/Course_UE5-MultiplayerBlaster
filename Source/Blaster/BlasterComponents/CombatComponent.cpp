@@ -8,10 +8,12 @@
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false; // FALSE
+	PrimaryComponentTick.bCanEverTick = true;
 
 	BaseWalkSpeed = 600.f;
 	AimWalkSpeed = 450.f;
@@ -60,6 +62,8 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	FHitResult HitResult;
+	TraceUnderCrosshairs(HitResult);
 }
 
 // Called from the server from BlasterCharacter
@@ -121,5 +125,50 @@ void UCombatComponent::MulticastFire_Implementation()
 	{
 		Character->PlayFireMontage(bAiming);
 		EquippedWeapon->Fire();
+	}
+}
+
+void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
+{
+	// Tracing from the center of the screen
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+
+	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f); // Center of our viewport
+
+	// The crosshair location is in viewport/screen space. We need to convert from screen to world space
+	FVector CrosshairWorldPosition; // out param
+	FVector CrosshairWorldDirection; // out param
+
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0), // index 0 gives the local player
+		CrosshairLocation, // The location we want to deproject to world
+		CrosshairWorldPosition, // The center of our screen
+		CrosshairWorldDirection // The direction our screen is facing
+	);
+
+	if (bScreenToWorld)
+	{
+		FVector Start = CrosshairWorldPosition;
+		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH; // Trace length is a macro defined in CombatComponent.h
+
+		GetWorld()->LineTraceSingleByChannel(
+			TraceHitResult, // Out param
+			Start,
+			End,
+			ECollisionChannel::ECC_Visibility
+		);
+
+		if (!TraceHitResult.bBlockingHit) // If we didn't hit anything, we set the impact point so we can still have somewhere to fire our projectile
+		{
+			TraceHitResult.ImpactPoint = End;
+		}
+		else
+		{
+			DrawDebugSphere(GetWorld(), TraceHitResult.ImpactPoint, 12.f, 12, FColor::Red);
+		}
 	}
 }
