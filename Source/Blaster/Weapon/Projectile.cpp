@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Particles/ParticleSystem.h"
+#include "Sound/SoundCue.h"
 
 AProjectile::AProjectile()
 {
@@ -40,13 +41,40 @@ void AProjectile::BeginPlay()
 			GetActorLocation(),
 			GetActorRotation(),
 			EAttachLocation::KeepWorldPosition // Spawns the particle at the world position of the collision box, and keep it there (follow along)
-			);
+		);
 	}
+
+	if (HasAuthority()) // We only want hit events to happen on the server
+	{
+		CollisionBox->OnComponentHit.AddDynamic(this, &AProjectile::OnHit); // We use OnComponentHit instead of OnComponentBeginOverlap. 
+	}
+}
+
+// Only called from the server
+void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	Destroy();
 }
 
 void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+// Called when the projectile is destroyed from OnHit, as destruction of a replicated actor is propagated to clients, and AActor::Destroyed is called on server and all clients
+void AProjectile::Destroyed()
+{
+	Super::Destroyed();
+
+	if (ImpactParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, GetActorTransform());
+	}
+
+	if (ImpactSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+	}
 }
 
