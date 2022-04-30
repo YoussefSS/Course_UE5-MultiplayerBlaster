@@ -7,7 +7,11 @@
 
 void AProjectileWeapon::Fire(const FVector& HitTarget)
 {
-	Super::Fire(HitTarget);
+	Super::Fire(HitTarget); // This is fine to call on clients as we want it to do things that happen on all machines
+
+	if (!HasAuthority()) return;
+
+	// Only spawning the projectile when on the server. Remember that AWeapon is set to replicate.
 
 	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
 	// Spawning the projectile
