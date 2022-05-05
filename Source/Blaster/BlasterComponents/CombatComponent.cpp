@@ -11,7 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
-#include "Blaster/HUD/BlasterHUD.h"
+//#include "Blaster/HUD/BlasterHUD.h"
 #include "Camera\CameraComponent.h"
 
 UCombatComponent::UCombatComponent()
@@ -74,7 +74,6 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;
 		if (HUD)
 		{
-			FHUDPackage HUDPackage;
 			if (EquippedWeapon)
 			{
 				HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
@@ -223,7 +222,7 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 
 		if (EquippedWeapon)
 		{
-			CrosshairShootingFactor = 0.75f;
+			CrosshairShootingFactor = .75f;
 		}
 	}
 }
@@ -281,6 +280,15 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 		if (!TraceHitResult.bBlockingHit) // If we didn't hit anything, we set the impact point so we can still have somewhere to fire our projectile
 		{
 			TraceHitResult.ImpactPoint = End;
+		}
+
+		if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairsInterface>())
+		{
+			HUDPackage.CrosshairsColor = FLinearColor::Red;
+		}
+		else
+		{
+			HUDPackage.CrosshairsColor = FLinearColor::White;
 		}
 	}
 }
