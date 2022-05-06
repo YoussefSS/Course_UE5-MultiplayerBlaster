@@ -21,6 +21,8 @@ public:
 	virtual void PostInitializeComponents() override; // This is the earliest time we can get access to a component
 	void PlayFireMontage(bool bAiming);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastHit();
 protected:
 	virtual void BeginPlay() override;
 
@@ -38,6 +40,7 @@ protected:
 	void FireButtonReleased();
 
 	void AimOffset(float DeltaTime);
+	void PlayHitReactMontage();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -74,6 +77,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	class UAnimMontage* FireWeaponMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* HitReactMontage;
 
 	// Hides the character when we are backed up against a wall and can't see anything except our char
 	void HideCameraIfCharacterClose();
