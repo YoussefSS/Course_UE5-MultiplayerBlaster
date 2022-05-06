@@ -74,6 +74,13 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	class UAnimMontage* FireWeaponMontage;
+
+	// Hides the character when we are backed up against a wall and can't see anything except our char
+	void HideCameraIfCharacterClose();
+
+	UPROPERTY(EditAnywhere)
+	float CameraThreshold = 200.f;
+
 public:	
 	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
 	void SetOverlappingWeapon(AWeapon* Weapon);

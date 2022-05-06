@@ -268,6 +268,13 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	if (bScreenToWorld)
 	{
 		FVector Start = CrosshairWorldPosition;
+
+		// Extending the start location forward, as we don't want to collide with things behind the character, or the character itself
+		if (Character)
+		{
+			float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
+			Start += CrosshairWorldDirection * (DistanceToCharacter + 100.f); // We push it even further than the distance to character as this is not enough to aim past the character
+		}
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH; // Trace length is a macro defined in CombatComponent.h
 
 		GetWorld()->LineTraceSingleByChannel(
