@@ -11,8 +11,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
-//#include "Blaster/HUD/BlasterHUD.h"
 #include "Camera\CameraComponent.h"
+#include "TimerManager.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -64,114 +64,7 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	
 }
 
-void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
-{
-	if (Character == nullptr || Character->Controller == nullptr) return;
 
-	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-	if (Controller)
-	{
-		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;
-		if (HUD)
-		{
-			if (EquippedWeapon)
-			{
-				HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
-				HUDPackage.CrosshairsLeft = EquippedWeapon->CrosshairsLeft;
-				HUDPackage.CrosshairsRight = EquippedWeapon->CrosshairsRight;
-				HUDPackage.CrosshairsBottom = EquippedWeapon->CrosshairsBottom;
-				HUDPackage.CrosshairsTop = EquippedWeapon->CrosshairsTop;
-			}
-			else
-			{
-				HUDPackage.CrosshairsCenter = nullptr;
-				HUDPackage.CrosshairsLeft = nullptr;
-				HUDPackage.CrosshairsRight = nullptr;
-				HUDPackage.CrosshairsBottom = nullptr;
-				HUDPackage.CrosshairsTop = nullptr;
-			}
-
-			// Calculating crosshair spread. 
-			
-			/* Based on characters velocity
-			*  Value that is always between 0 (not moving) and 1 (moving at max walk speed) .. [0,600] -> [0,1] */
-			FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
-			FVector2D VelocityMultiplayerRange(0.f, 1.f);
-			FVector Velocity = Character->GetVelocity();
-			Velocity.Z = 0.f;
-			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplayerRange, Velocity.Size());
-			
-			// Check if we are in the air. We can spread more when we are in the air
-			if (Character->GetCharacterMovement()->IsFalling())
-			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
-			}
-			else
-			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
-			}
-
-			// Aim factor
-			if (bAiming)
-			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, -0.58f, DeltaTime, 30.f); // negative value as we want to tighten the crosshair when aiming
-			}
-			else
-			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0, DeltaTime, 30.f);
-			}
-
-			// Shooting factor
-			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 40.f); // Always interping the Shooting factor down to 0
-
-			HUDPackage.CrosshairSpread = 
-				0.5f + // baseline spread
-				CrosshairVelocityFactor + 
-				CrosshairInAirFactor +
-				CrosshairAimFactor +
-				CrosshairShootingFactor;
-			HUD->SetHUDPackage(HUDPackage);
-		}
-	}
-}
-
-void UCombatComponent::InterpFOV(float DeltaTime)
-{
-	if (EquippedWeapon == nullptr) return;
-
-	if (bAiming)
-	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->GetZoomedFOV(), DeltaTime, EquippedWeapon->GetZoomInterpSpeed());
-	}
-	else
-	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
-	}
-	if (Character && Character->GetFollowCamera())
-	{
-		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
-	}
-}
-
-void UCombatComponent::SetAiming(bool bIsAiming)
-{
-	bAiming = bIsAiming; // We can set this, even for clients, because if we depended on the RPC, this would take time for the character to aim down sights depending on the clients internet speed. So with cosmetic things, we can set them directly without having to be on the server
-	ServerSetAiming(bIsAiming); // Note that we don't check if we are a client (using !Character->HasAuthority), as running a Server function from a server, is like running a regular function (see RPC documentation)
-	if (Character)
-	{
-		// Note that setting the MaxWalkSpeed on the client only is very bad, as the server still thinks you use the default MaxWalkSpeed, and the movement will become very choppy as the server tries to reset you to normal speed
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed; 
-	}
-}
-
-void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
-{
-	bAiming = bIsAiming;
-	if (Character)
-	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
-	}
-}
 
 
 // Called from the server from BlasterCharacter
@@ -214,16 +107,39 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPressed = bPressed;
 	
-	if (bFireButtonPressed)
+	if (bFireButtonPressed && EquippedWeapon)
 	{
-		FHitResult HitResult;
-		TraceUnderCrosshairs(HitResult);
-		ServerFire(HitResult.ImpactPoint);
+		Fire();
+	}
+}
 
+void UCombatComponent::Fire()
+{
+	if (bCanFire)
+	{
+		bCanFire = false;
+		ServerFire(HitTarget); // We're already calculating HitTarget every frame
 		if (EquippedWeapon)
 		{
 			CrosshairShootingFactor = .75f;
 		}
+		StartFireTimer();
+	}
+}
+
+void UCombatComponent::StartFireTimer()
+{
+	if (EquippedWeapon == nullptr || Character == nullptr) return;
+	Character->GetWorldTimerManager().SetTimer(FireTimer, this, &UCombatComponent::FireTimerFinished, EquippedWeapon->FireDelay);
+}
+
+void UCombatComponent::FireTimerFinished()
+{
+	if (EquippedWeapon == nullptr) return;
+	bCanFire = true;
+	if (bFireButtonPressed && EquippedWeapon->bAutomatic)
+	{
+		Fire();
 	}
 }
 
@@ -300,3 +216,111 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	}
 }
 
+void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
+{
+	if (Character == nullptr || Character->Controller == nullptr) return;
+
+	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+	if (Controller)
+	{
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;
+		if (HUD)
+		{
+			if (EquippedWeapon)
+			{
+				HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
+				HUDPackage.CrosshairsLeft = EquippedWeapon->CrosshairsLeft;
+				HUDPackage.CrosshairsRight = EquippedWeapon->CrosshairsRight;
+				HUDPackage.CrosshairsBottom = EquippedWeapon->CrosshairsBottom;
+				HUDPackage.CrosshairsTop = EquippedWeapon->CrosshairsTop;
+			}
+			else
+			{
+				HUDPackage.CrosshairsCenter = nullptr;
+				HUDPackage.CrosshairsLeft = nullptr;
+				HUDPackage.CrosshairsRight = nullptr;
+				HUDPackage.CrosshairsBottom = nullptr;
+				HUDPackage.CrosshairsTop = nullptr;
+			}
+
+			// Calculating crosshair spread. 
+
+			/* Based on characters velocity
+			*  Value that is always between 0 (not moving) and 1 (moving at max walk speed) .. [0,600] -> [0,1] */
+			FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
+			FVector2D VelocityMultiplayerRange(0.f, 1.f);
+			FVector Velocity = Character->GetVelocity();
+			Velocity.Z = 0.f;
+			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplayerRange, Velocity.Size());
+
+			// Check if we are in the air. We can spread more when we are in the air
+			if (Character->GetCharacterMovement()->IsFalling())
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
+			}
+			else
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
+			}
+
+			// Aim factor
+			if (bAiming)
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, -0.58f, DeltaTime, 30.f); // negative value as we want to tighten the crosshair when aiming
+			}
+			else
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0, DeltaTime, 30.f);
+			}
+
+			// Shooting factor
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 40.f); // Always interping the Shooting factor down to 0
+
+			HUDPackage.CrosshairSpread =
+				0.5f + // baseline spread
+				CrosshairVelocityFactor +
+				CrosshairInAirFactor +
+				CrosshairAimFactor +
+				CrosshairShootingFactor;
+			HUD->SetHUDPackage(HUDPackage);
+		}
+	}
+}
+
+void UCombatComponent::InterpFOV(float DeltaTime)
+{
+	if (EquippedWeapon == nullptr) return;
+
+	if (bAiming)
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->GetZoomedFOV(), DeltaTime, EquippedWeapon->GetZoomInterpSpeed());
+	}
+	else
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
+	}
+	if (Character && Character->GetFollowCamera())
+	{
+		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
+	}
+}
+
+void UCombatComponent::SetAiming(bool bIsAiming)
+{
+	bAiming = bIsAiming; // We can set this, even for clients, because if we depended on the RPC, this would take time for the character to aim down sights depending on the clients internet speed. So with cosmetic things, we can set them directly without having to be on the server
+	ServerSetAiming(bIsAiming); // Note that we don't check if we are a client (using !Character->HasAuthority), as running a Server function from a server, is like running a regular function (see RPC documentation)
+	if (Character)
+	{
+		// Note that setting the MaxWalkSpeed on the client only is very bad, as the server still thinks you use the default MaxWalkSpeed, and the movement will become very choppy as the server tries to reset you to normal speed
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
+{
+	bAiming = bIsAiming;
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}

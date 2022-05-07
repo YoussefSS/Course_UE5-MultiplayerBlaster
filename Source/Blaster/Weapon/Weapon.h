@@ -44,6 +44,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = Crosshairs)
 	UTexture2D* CrosshairsBottom;
 
+	/**
+	 * Automatic fire
+	 */
+	UPROPERTY(EditAnywhere, Category = Combat)
+	float FireDelay = 0.15;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	bool bAutomatic = true;
+
 protected:
 	virtual void BeginPlay() override;
 
