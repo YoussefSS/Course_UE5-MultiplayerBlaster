@@ -68,7 +68,24 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	AimOffset(DeltaTime);
+	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) // greater than means AutonomousProxy(locally controlled) and Authority. We only call AimOffset for players that are actually controlling the character
+	{
+		AimOffset(DeltaTime);
+	}
+	else
+	{
+		/* Note: TimeSinceLastMovementReplication is reset in BlasterCharacter::OnRep_ReplicatedMovement
+		* We don't call SimProxiesTurn every frame because this isn't gonna work on the simulated proxy, because the net update frequency is lower than the tick rate..
+		* so we will keep getting 0 deltas even though they should be higher. */
+		TimeSinceLastMovementReplication += DeltaTime;
+		if (TimeSinceLastMovementReplication > 0.25f) // If movement hasn't replicated for a while
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
+	}
+	
+	
 	HideCameraIfCharacterClose();
 }
 
@@ -245,17 +262,24 @@ void ABlasterCharacter::FireButtonReleased()
 	}
 }
 
+float ABlasterCharacter::CalculateSpeed()
+{
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+	return Velocity.Size();
+}
+
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
 	if (Combat && Combat->EquippedWeapon == nullptr) return;
 
-	FVector Velocity = GetVelocity();
-	Velocity.Z = 0.f;
-	float Speed = Velocity.Size();
+	float Speed = CalculateSpeed();
 	bool bIsInAir = GetCharacterMovement()->IsFalling();
 
 	if (Speed == 0.f && !bIsInAir) // Standing still and not jumping
 	{
+		bRotateRootBone = true;// We only need to rotate the root bone if we are standing still and not jumping
+
 		// Getting the delta
 		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartingAimRotation);
@@ -273,12 +297,18 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 	// Storing the initial base aim rotation on movement so we can get the delta after stopping
 	if (Speed > 0.f || bIsInAir)
 	{
+		bRotateRootBone = false; // There is no need for this to be true here
 		StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		AO_Yaw = 0.f;
 		bUseControllerRotationYaw = true;
 		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 	}
 
+	CalculateAO_Pitch();
+}
+
+void ABlasterCharacter::CalculateAO_Pitch()
+{
 	// We set pitch regardless of if we are running or not
 	AO_Pitch = GetBaseAimRotation().Pitch;
 	// Rotation is compressed to an unsigned int by UE when sent across the network, we fix this here
@@ -288,8 +318,48 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 		FVector2D InRange(270.f, 360.f);
 		FVector2D OutRange(-90.f, 0.f);
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
-
 	}
+}
+
+// Handling turning for simulated proxies
+void ABlasterCharacter::SimProxiesTurn()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	bRotateRootBone = false;
+
+	float Speed = CalculateSpeed();
+	if (Speed > 0.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
+	
+	ProxyRotationLastFrame = ProxyRotation;
+	ProxyRotation = GetActorRotation();
+	// Calculating the difference in rotation since the last frame.. 
+	// This isn't gonna work on the simulated proxy, because the net update frequency is lower than the tick rate.. so we will keep getting 0 deltas even though they should be higher
+	ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw; 
+	UE_LOG(LogTemp, Warning, TEXT("ProxyYaw: %f"), ProxyYaw);
+
+	if (FMath::Abs(ProxyYaw) > TurnThreshold)
+	{
+		if (ProxyYaw > TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_Right;
+		}
+		else if (ProxyYaw < -TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_Left;
+		}
+		else
+		{
+			TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		}
+		return;
+	}
+
+	// If we haven't rotated enough, don't turn
+	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
@@ -320,6 +390,14 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 void ABlasterCharacter::MulticastHit_Implementation()
 {
 	PlayHitReactMontage();
+}
+
+void ABlasterCharacter::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+
+	SimProxiesTurn();
+	TimeSinceLastMovementReplication = 0.f;
 }
 
 void ABlasterCharacter::HideCameraIfCharacterClose()
