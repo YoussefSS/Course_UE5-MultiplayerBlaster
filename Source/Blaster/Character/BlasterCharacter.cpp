@@ -57,19 +57,20 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(ABlasterCharacter, Health);
 }
 
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	BlasterPlayerController = Cast<ABlasterPlayerController>(Controller);
-	if (BlasterPlayerController)
+	UpdateHUDHealth();
+
+	if (HasAuthority())
 	{
-		BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
+		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::ReceiveDamage);
 	}
 }
-
 
 void ABlasterCharacter::Tick(float DeltaTime)
 {
@@ -149,6 +150,33 @@ void ABlasterCharacter::PlayHitReactMontage()
 		AnimInstance->Montage_Play(HitReactMontage);
 		FName SectionName("FromFront");
 		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+// Only called on the server
+void ABlasterCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser)
+{
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
+
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+}
+
+void ABlasterCharacter::OnRep_Health()
+{
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+
+	UE_LOG(LogTemp, Warning, TEXT("health replicated"));
+
+}
+
+void ABlasterCharacter::UpdateHUDHealth()
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
+	if (BlasterPlayerController)
+	{
+		BlasterPlayerController->SetHUDHealth(Health, MaxHealth);
 	}
 }
 
@@ -276,11 +304,6 @@ float ABlasterCharacter::CalculateSpeed()
 	return Velocity.Size();
 }
 
-void ABlasterCharacter::OnRep_Health()
-{
-
-}
-
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
 	if (Combat && Combat->EquippedWeapon == nullptr) return;
@@ -350,8 +373,7 @@ void ABlasterCharacter::SimProxiesTurn()
 	ProxyRotation = GetActorRotation();
 	// Calculating the difference in rotation since the last frame.. 
 	// This isn't gonna work on the simulated proxy, because the net update frequency is lower than the tick rate.. so we will keep getting 0 deltas even though they should be higher
-	ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw; 
-	UE_LOG(LogTemp, Warning, TEXT("ProxyYaw: %f"), ProxyYaw);
+	ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw;
 
 	if (FMath::Abs(ProxyYaw) > TurnThreshold)
 	{
@@ -397,11 +419,6 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 		}
 	}
 
-}
-
-void ABlasterCharacter::MulticastHit_Implementation()
-{
-	PlayHitReactMontage();
 }
 
 void ABlasterCharacter::OnRep_ReplicatedMovement()
@@ -497,5 +514,4 @@ FVector ABlasterCharacter::GetHitTarget() const
 	if (Combat == nullptr) return FVector();
 	return Combat->HitTarget;
 }
-
 

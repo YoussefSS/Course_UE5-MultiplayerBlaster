@@ -21,13 +21,12 @@ public:
 	virtual void PostInitializeComponents() override; // This is the earliest time we can get access to a component
 	void PlayFireMontage(bool bAiming);
 
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastHit();
-
 	virtual void OnRep_ReplicatedMovement() override;
 
 protected:
 	virtual void BeginPlay() override;
+
+	void UpdateHUDHealth();
 
 	virtual void Jump() override;
 
@@ -47,6 +46,8 @@ protected:
 	void SimProxiesTurn();
 
 	void PlayHitReactMontage();
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
