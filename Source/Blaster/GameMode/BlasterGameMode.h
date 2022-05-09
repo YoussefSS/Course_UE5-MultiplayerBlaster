@@ -6,8 +6,9 @@
 #include "GameFramework/GameMode.h"
 #include "BlasterGameMode.generated.h"
 
+
 /**
- * 
+ * Everything in this class only runs on the server
  */
 UCLASS()
 class BLASTER_API ABlasterGameMode : public AGameMode
