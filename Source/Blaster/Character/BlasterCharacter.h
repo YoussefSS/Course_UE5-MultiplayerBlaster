@@ -24,8 +24,10 @@ public:
 
 	virtual void OnRep_ReplicatedMovement() override;
 
+	
+	void Elim(); // Server only
 	UFUNCTION(NetMulticast, Reliable)
-	void Elim();
+	void MulticastElim();
 
 protected:
 	virtual void BeginPlay() override;
@@ -127,6 +129,12 @@ private:
 
 	bool bElimmed = false;
 
+	FTimerHandle ElimTimer;
+
+	UPROPERTY(EditDefaultsOnly)
+	float ElimDelay = 3.f;
+
+	void ElimTimerFinished();
 public:	
 	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
 	void SetOverlappingWeapon(AWeapon* Weapon);
