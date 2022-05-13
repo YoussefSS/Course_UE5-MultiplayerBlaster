@@ -72,6 +72,11 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
 
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Dropped();
+	}
+
 	// Attaching the weapon to a socket on our character
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped); // It is not guaranteed that SetWeaponState will be replicated before AttachActor!! This is why we call this and AttachActor again in OnRep_EquippedWeapon
@@ -86,6 +91,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	/* Making the character the owner of the weapon, we don't need to do this on the client, as SetOwner is propagated to clients
 	This is because inside it Owner is set which is ReplicatedUsing OnRep_Owner, which is a virtual function that we can override if we want*/
 	EquippedWeapon->SetOwner(Character);
+	EquippedWeapon->SetHUDAmmo();
 
 	// We want our character to look where we are aiming when they equip something. Not that this is only set on the server, so we will take care of this for the clients in a RepNotify
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false; 
