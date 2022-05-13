@@ -53,8 +53,11 @@ protected:
 	void SetHUDCrosshairs(float DeltaTime);
 
 private:
+	UPROPERTY()
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
+	UPROPERTY()
 	class ABlasterPlayerController* Controller;
+	UPROPERTY()
 	class ABlasterHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)

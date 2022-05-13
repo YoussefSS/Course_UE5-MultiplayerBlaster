@@ -198,6 +198,7 @@ void ABlasterCharacter::PollInit()
 		if (BlasterPlayerState)
 		{
 			BlasterPlayerState->AddToScore(0.f); // We add 0 just to update the HUD
+			BlasterPlayerState->AddToDefeats(0); // We add 0 just to update the HUD
 		}
 	}
 }

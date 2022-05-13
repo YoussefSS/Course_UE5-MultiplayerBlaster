@@ -128,6 +128,7 @@ private:
 	UFUNCTION()
 	void OnRep_Health();
 
+	UPROPERTY()
 	class ABlasterPlayerController* BlasterPlayerController;
 
 	bool bElimmed = false;
@@ -166,7 +167,7 @@ private:
 	UMaterialInstance* DissolveMaterialInstance;
 
 	/* End dissolve effect */
-
+	UPROPERTY()
 	class ABlasterPlayerState* BlasterPlayerState;
 
 public:	

@@ -4,8 +4,16 @@
 #include "BlasterPlayerState.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
+#include "Net/UnrealNetwork.h"
 
-// Should only be called on the server. However, we call this with ScoreAmount 0 on clients just to update HUD
+void ABlasterPlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABlasterPlayerState, Defeats);
+}
+
+// Should only be called on the server. However, we call this with ScoreAmount 0 on clients from the character just to update HUD
 void ABlasterPlayerState::AddToScore(float ScoreAmount)
 {
 	SetScore(GetScore() + ScoreAmount);
@@ -19,7 +27,6 @@ void ABlasterPlayerState::AddToScore(float ScoreAmount)
 			Controller->SetHUDScore(GetScore());
 		}
 	}
-	GetPawn();
 }
 
 void ABlasterPlayerState::OnRep_Score()
@@ -35,6 +42,33 @@ void ABlasterPlayerState::OnRep_Score()
 			Controller->SetHUDScore(GetScore());
 		}
 	}
-	GetPawn();
+}
+
+void ABlasterPlayerState::AddToDefeats(int32 DefeatsAmount)
+{
+	Defeats += DefeatsAmount;
+
+	Character = Character == nullptr ? Cast<ABlasterCharacter>(GetPawn()) : Character;
+	if (Character)
+	{
+		Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+		if (Controller)
+		{
+			Controller->SetHUDDefeats(Defeats);
+		}
+	}
+}
+
+void ABlasterPlayerState::OnRep_Defeats()
+{
+	Character = Character == nullptr ? Cast<ABlasterCharacter>(GetPawn()) : Character;
+	if (Character)
+	{
+		Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+		if (Controller)
+		{
+			Controller->SetHUDDefeats(Defeats);
+		}
+	}
 }
 

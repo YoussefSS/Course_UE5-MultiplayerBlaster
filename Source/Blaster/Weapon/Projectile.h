@@ -36,6 +36,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	class UParticleSystem* Tracer;
 
+	UPROPERTY()
 	class UParticleSystemComponent* TracerComponent; // Storing the tracer in this variable once spawned
 
 	UPROPERTY(EditAnywhere)
