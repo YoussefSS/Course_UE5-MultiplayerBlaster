@@ -6,10 +6,20 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
+#include "Blaster/PlayerState/BlasterPlayerState.h"
+
 // Everything in this class only runs on the server
 
 void ABlasterGameMode::PlayerEliminated(class ABlasterCharacter* ElimmedCharacter, class ABlasterPlayerController* VictimController, ABlasterPlayerController* AttackerController)
 {
+	ABlasterPlayerState* AttackerPlayerState = AttackerController ? Cast<ABlasterPlayerState>(AttackerController->PlayerState) : nullptr;
+	ABlasterPlayerState* VictimPlayerState = VictimController ? Cast<ABlasterPlayerState>(VictimController->PlayerState) : nullptr;
+
+	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState) // If the player didn't kill itself
+	{
+		AttackerPlayerState->AddToScore(1.0f);
+	}
+
 	if (ElimmedCharacter)
 	{
 		ElimmedCharacter->Elim();

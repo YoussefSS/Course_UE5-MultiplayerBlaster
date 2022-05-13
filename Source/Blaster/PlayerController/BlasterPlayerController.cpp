@@ -23,8 +23,6 @@ void ABlasterPlayerController::SetHUDHealth(float Health, float MaxHealth)
 		BlasterHUD->CharacterOverlay && 
 		BlasterHUD->CharacterOverlay->HealthBar && 
 		BlasterHUD->CharacterOverlay->HealthText;
-	if (BlasterHUD) UE_LOG(LogTemp, Warning, TEXT("BlasterHUD Valid"));
-	if (BlasterHUD && BlasterHUD->CharacterOverlay) UE_LOG(LogTemp, Warning, TEXT("BlasterHUD CharOverlay valid"));
 
 	if (bHUDValid)
 	{
@@ -32,6 +30,21 @@ void ABlasterPlayerController::SetHUDHealth(float Health, float MaxHealth)
 		BlasterHUD->CharacterOverlay->HealthBar->SetPercent(HealthPercent);
 		FString HealthText = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(Health), FMath::CeilToInt(MaxHealth));
 		BlasterHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthText));
+	}
+}
+
+void ABlasterPlayerController::SetHUDScore(float Score)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	bool bHUDValid = BlasterHUD &&
+		BlasterHUD->CharacterOverlay &&
+		BlasterHUD->CharacterOverlay->ScoreAmount;
+
+	if (bHUDValid)
+	{
+		FString ScoreText = FString::Printf(TEXT("%d"), FMath::FloorToInt(Score));
+		BlasterHUD->CharacterOverlay->ScoreAmount->SetText(FText::FromString(ScoreText));
 	}
 }
 

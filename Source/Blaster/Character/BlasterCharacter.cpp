@@ -16,6 +16,7 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
 #include "TimerManager.h"
+#include "Blaster/PlayerState/BlasterPlayerState.h"
 
 ABlasterCharacter::ABlasterCharacter()
 {
@@ -101,6 +102,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	
 	
 	HideCameraIfCharacterClose();
+	PollInit();
 }
 
 void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -184,6 +186,18 @@ void ABlasterCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const 
 			BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 			ABlasterPlayerController* AttackerController = Cast<ABlasterPlayerController>(InstigatorController);
 			BlasterGameMode->PlayerEliminated(this, BlasterPlayerController, AttackerController);
+		}
+	}
+}
+
+void ABlasterCharacter::PollInit()
+{
+	if (BlasterPlayerState == nullptr)
+	{
+		BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
+		if (BlasterPlayerState)
+		{
+			BlasterPlayerState->AddToScore(0.f); // We add 0 just to update the HUD
 		}
 	}
 }

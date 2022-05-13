@@ -56,6 +56,8 @@ protected:
 	UFUNCTION()
 	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
 
+	// Poll for any relevant classes and initialize our HUD (ex PlayerState which is null on the first frame)
+	void PollInit();
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* CameraBoom;
@@ -162,6 +164,10 @@ private:
 	// Material instance set on BP, used with the dynamic material instance
 	UPROPERTY(EditAnywhere, Category = Elim)
 	UMaterialInstance* DissolveMaterialInstance;
+
+	/* End dissolve effect */
+
+	class ABlasterPlayerState* BlasterPlayerState;
 
 public:	
 	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
