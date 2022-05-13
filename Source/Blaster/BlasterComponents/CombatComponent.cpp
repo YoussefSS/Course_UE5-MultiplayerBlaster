@@ -74,7 +74,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 
 	// Attaching the weapon to a socket on our character
 	EquippedWeapon = WeaponToEquip;
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped); // It is not guaranteed that SetWeaponState will be replicated before AttachActor!! This is why we call this and AttachActor again in OnRep_EquippedWeapon
 
 	// Attaching actors IS propagated to clients
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
@@ -97,6 +97,13 @@ void UCombatComponent::OnRep_EquippedWeapon()
 	// We want our character to look where we are aiming when they equip something. Handles the client
 	if (EquippedWeapon && Character)
 	{
+		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+		if (HandSocket)
+		{
+			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		}
+
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
 	}

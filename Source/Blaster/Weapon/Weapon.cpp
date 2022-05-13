@@ -87,8 +87,16 @@ void AWeapon::OnRep_WeaponState()
 {
 	switch (WeaponState)
 	{
-	case EWeaponState::EWS_Equipped: // Disabling widget and collision when a weapon is equipped. Without this, when a weapon is equipped, the widget is still visible, and other characters can still overlap with the weapon
-		ShowPickupWidget(false);
+	case EWeaponState::EWS_Equipped: 
+		ShowPickupWidget(false); // Disabling widget and collision when a weapon is equipped. Without this, when a weapon is equipped, the widget is still visible, and other characters can still overlap with the weapon
+		WeaponMesh->SetSimulatePhysics(false);
+		WeaponMesh->SetEnableGravity(false);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		break;
+	case EWeaponState::EWS_Dropped:
+		WeaponMesh->SetSimulatePhysics(true);
+		WeaponMesh->SetEnableGravity(true);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	default:
 		break;
@@ -105,6 +113,18 @@ void AWeapon::SetWeaponState(EWeaponState State)
 		// This is NOT propagated to clients. We take care of this in OnRep_WeaponState in AWeapon
 		ShowPickupWidget(false);
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision); // We disable the collision on the server
+		WeaponMesh->SetSimulatePhysics(false);
+		WeaponMesh->SetEnableGravity(false);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		break;
+	case EWeaponState::EWS_Dropped:
+		if (HasAuthority())
+		{
+			AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly); // This function is called from both server and client, so we only want to enable area sphere on the server
+		}
+		WeaponMesh->SetSimulatePhysics(true);
+		WeaponMesh->SetEnableGravity(true);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	default:
 		break;
@@ -146,4 +166,12 @@ void AWeapon::Fire(const FVector& HitTarget)
 			}
 		}
 	}
+}
+
+void AWeapon::Dropped()
+{
+	SetWeaponState(EWeaponState::EWS_Dropped);
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true); // Always use true?
+	WeaponMesh->DetachFromComponent(DetachRules);
+	SetOwner(nullptr);
 }
