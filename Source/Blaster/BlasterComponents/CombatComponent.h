@@ -124,4 +124,9 @@ private:
 	void OnRep_CarriedAmmo();
 
 	TMap<EWeaponType, int32> CarriedAmmoMap; // TMap type can NOT be replicated 
+
+	UPROPERTY(EditAnywhere)
+	int32 StartingARAmmo = 30;
+
+	void InitializeCarriedAmmo();
 };

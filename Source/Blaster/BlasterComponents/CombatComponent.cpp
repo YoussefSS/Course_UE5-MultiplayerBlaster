@@ -44,7 +44,14 @@ void UCombatComponent::BeginPlay()
 			DefaultFOV = Character->GetFollowCamera()->FieldOfView;
 			CurrentFOV = DefaultFOV;
 		}
+
+		/* Initialize carried ammo in the TMap if on the server */
+		if (Character->HasAuthority())
+		{
+			InitializeCarriedAmmo();
+		}
 	}
+
 }
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -92,7 +99,20 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	/* Making the character the owner of the weapon, we don't need to do this on the client, as SetOwner is propagated to clients
 	This is because inside it Owner is set which is ReplicatedUsing OnRep_Owner, which is a virtual function that we can override if we want*/
 	EquippedWeapon->SetOwner(Character);
+
+	/* Ammo */
 	EquippedWeapon->SetHUDAmmo();
+
+	/* Setting carried ammo based on the weapon type */
+	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	{
+		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
+	}
+	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+	if (Controller)
+	{
+		Controller->SetHUDCarriedAmmo(CarriedAmmo);
+	}
 
 	// We want our character to look where we are aiming when they equip something. Not that this is only set on the server, so we will take care of this for the clients in a RepNotify
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false; 
@@ -347,6 +367,16 @@ bool UCombatComponent::CanFire()
 
 void UCombatComponent::OnRep_CarriedAmmo()
 {
+	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+	if (Controller)
+	{
+		Controller->SetHUDCarriedAmmo(CarriedAmmo);
+	}
+}
 
+// Only server should have authority over the TMap (remember that TMaps cannot be replicated)
+void UCombatComponent::InitializeCarriedAmmo()
+{
+	CarriedAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, StartingARAmmo);
 }
 
