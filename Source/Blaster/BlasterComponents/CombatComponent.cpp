@@ -120,6 +120,11 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, Character->GetActorLocation());
 	}
 
+	if (EquippedWeapon->IsEmpty())
+	{
+		Reload();
+	}
+
 	// We want our character to look where we are aiming when they equip something. Not that this is only set on the server, so we will take care of this for the clients in a RepNotify
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false; 
 	Character->bUseControllerRotationYaw = true;
@@ -270,6 +275,10 @@ void UCombatComponent::FireTimerFinished()
 	if (bFireButtonPressed && EquippedWeapon->bAutomatic)
 	{
 		Fire();
+	}
+	if (EquippedWeapon->IsEmpty())
+	{
+		Reload();
 	}
 }
 
