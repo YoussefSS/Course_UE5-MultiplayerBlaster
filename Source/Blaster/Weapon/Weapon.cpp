@@ -223,6 +223,13 @@ void AWeapon::Dropped()
 	BlasterOwnerController = nullptr;
 }
 
+// Only called from the server from CombatComponent::ServerReload
+void AWeapon::AddAmmo(int32 AmmoToAdd)
+{
+	Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity); // Why are we subtracting instead of adding?
+	SetHUDAmmo();
+}
+
 bool AWeapon::IsEmpty()
 {
 	return Ammo <= 0;

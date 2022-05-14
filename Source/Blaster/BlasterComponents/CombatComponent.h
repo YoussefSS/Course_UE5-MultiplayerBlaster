@@ -61,6 +61,9 @@ protected:
 
 	// Handles reload logic that happens on all machines
 	void HandleReload();
+
+	int32 AmountToReload();
+
 private:
 	UPROPERTY()
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
@@ -143,4 +146,6 @@ private:
 
 	UFUNCTION()
 	void OnRep_CombatState();
+
+	void UpdateAmmoValues();
 };
