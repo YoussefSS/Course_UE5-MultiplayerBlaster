@@ -119,6 +119,22 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	Character->bUseControllerRotationYaw = true;
 }
 
+// This is called from an input binding, so from either client or server
+void UCombatComponent::Reload()
+{
+	// we do this check, because if carried ammo is 0, there is no need to take up bandwidth on the server and send an RPC
+	if (CarriedAmmo > 0)
+	{
+		ServerReload();
+	}
+}
+
+void UCombatComponent::ServerReload_Implementation()
+{
+	if (Character == nullptr) return;
+	Character->PlayReloadMontage();
+}
+
 void UCombatComponent::OnRep_EquippedWeapon()
 {
 	// We want our character to look where we are aiming when they equip something. Handles the client
