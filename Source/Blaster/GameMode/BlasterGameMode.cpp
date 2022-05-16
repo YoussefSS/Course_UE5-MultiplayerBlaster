@@ -10,6 +10,32 @@
 
 // Everything in this class only runs on the server
 
+ABlasterGameMode::ABlasterGameMode()
+{
+	bDelayedStart = true; // Gamemode will stay in the WaitingToStart MatchState where it will also spawn the default pawn, which can be used to fly around the level. Until we call StartMatch() 
+}
+
+void ABlasterGameMode::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (MatchState == MatchState::WaitingToStart)
+	{
+		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		if (CountdownTime <= 0.f)
+		{
+			StartMatch(); // Results in the gamemode transition the MatchState into InProgress
+		}
+	}
+}
+
+void ABlasterGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	LevelStartingTime = GetWorld()->GetTimeSeconds();
+}
+
 void ABlasterGameMode::PlayerEliminated(class ABlasterCharacter* ElimmedCharacter, class ABlasterPlayerController* VictimController, ABlasterPlayerController* AttackerController)
 {
 	ABlasterPlayerState* AttackerPlayerState = AttackerController ? Cast<ABlasterPlayerState>(AttackerController->PlayerState) : nullptr;
@@ -49,3 +75,4 @@ void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController*
 		RestartPlayerAtPlayerStart(ElimmedController, PlayerStarts[Selection]); // RestartPlayerAtPlayerStart Can take any actor, and spawn the player at that actor. There is also RestartPlayerAtTransform and RestartPlayer
 	}
 }
+
