@@ -23,9 +23,39 @@ public:
 	void SetHUDMatchCountdown(float CountdownTime);
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float DeltaTime) override;
+
+	virtual float GetServerTime(); // Synced with server world clock
+
+	/** The earliest we can get the time from the server. Here we will sync with server clock as soon as possible
+	 *  In PIE this might be too early, so we might sync after TimeSyncFrequency has passed (5 seconds) */
+	virtual void ReceivedPlayer() override; 
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
+
+	/**
+	 * Sync time between client and server
+	 */
+
+	// Request the current server time, passing in the client's time when the request was sent
+	UFUNCTION(Server, Reliable)
+	void ServerRequestServerTime(float TimeOfClientRequest);
+
+	// Reports the current server time to the client in response to ServerRequestServerTime
+	UFUNCTION(Client, Reliable)
+	void ClientReportServerTime(float TimeOfClientRequest, float TimeServerReceivedClientRequest);
+
+	// Difference between client and server time
+	float ClientServerDelta = 0.f;
+
+	// Every few seconds, sync up with the server time again.. this is just in case any drift happens
+	UPROPERTY(EditAnywhere, Category = Time)
+	float TimeSyncFrequency = 5.f;
+
+	// How much time has passed since last sync
+	float TimeSyncRunningTime = 0.f;
+
+	void CheckTimeSync(float DeltaTime);
 private:
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
