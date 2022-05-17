@@ -10,6 +10,11 @@
 
 // Everything in this class only runs on the server
 
+namespace MatchState 
+{
+	const FName Cooldown = FName("Cooldown");
+}
+
 ABlasterGameMode::ABlasterGameMode()
 {
 	bDelayedStart = true; // Gamemode will stay in the WaitingToStart MatchState where it will also spawn the default pawn, which can be used to fly around the level. Until we call StartMatch() 
@@ -25,6 +30,14 @@ void ABlasterGameMode::Tick(float DeltaTime)
 		if (CountdownTime <= 0.f)
 		{
 			StartMatch(); // Results in the gamemode transition the MatchState into InProgress
+		}
+	}
+	else if (MatchState == MatchState::InProgress) // Checking to see if we should go to the cooldown state
+	{
+		CountdownTime = WarmupTime + MatchTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		if (CountdownTime <= 0.f)
+		{
+			SetMatchState(MatchState::Cooldown);
 		}
 	}
 }
