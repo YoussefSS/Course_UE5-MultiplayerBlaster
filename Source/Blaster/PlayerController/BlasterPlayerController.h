@@ -21,6 +21,7 @@ public:
 	void SetHUDWeaponAmmo(int32 Ammo);
 	void SetHUDCarriedAmmo(int32 Ammo);
 	void SetHUDMatchCountdown(float CountdownTime);
+	void SetHUDAnnouncementCountdown(float CountdownTime);
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -62,11 +63,23 @@ protected:
 	float TimeSyncRunningTime = 0.f;
 
 	void CheckTimeSync(float DeltaTime);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCheckMatchState();
+
+	/**
+	 * The client will always join after some period of time has passed on the server, even if both joined together at the same time, the client will still have joined a second or so later
+	 * The client can also join when the game is in progress.. So all clients are joining mid game whatever time they join
+	 */
+	UFUNCTION(Client, Reliable)
+	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float StartingTime);
 private:
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
 
-	float MatchTime = 120.f;
+	float LevelStartingTime = 0;
+	float MatchTime = 0.f;
+	float WarmupTime = 0.f;
 	uint32 CountdownInt = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
