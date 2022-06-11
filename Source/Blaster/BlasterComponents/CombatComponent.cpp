@@ -446,6 +446,8 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
+	if (Character == nullptr || EquippedWeapon == nullptr) return;
+
 	bAiming = bIsAiming; // We can set this, even for clients, because if we depended on the RPC, this would take time for the character to aim down sights depending on the clients internet speed. So with cosmetic things, we can set them directly without having to be on the server
 	ServerSetAiming(bIsAiming); // Note that we don't check if we are a client (using !Character->HasAuthority), as running a Server function from a server, is like running a regular function (see RPC documentation)
 	if (Character)
@@ -453,6 +455,12 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 		// Note that setting the MaxWalkSpeed on the client only is very bad, as the server still thinks you use the default MaxWalkSpeed, and the movement will become very choppy as the server tries to reset you to normal speed
 		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 	}
+
+	if (Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
+	{
+		Character->ShowSniperScopeWidget(bIsAiming);
+	}
+
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
