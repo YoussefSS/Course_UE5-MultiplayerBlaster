@@ -9,6 +9,8 @@
 #include "Sound/SoundCue.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/Blaster.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 
 AProjectile::AProjectile()
 {
@@ -54,10 +56,67 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	Destroy();
 }
 
+void AProjectile::SpawnTrailSystem()
+{
+	if (TrailSystem)
+	{
+		TrailSystemComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TrailSystem,
+			GetRootComponent(),
+			FName(),
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition,
+			false // bAutodestroy to false as we want to deactivate the system manually
+		);
+	}
+}
+
+void AProjectile::ExplodeDamage()
+{
+	APawn* FiringPawn = GetInstigator(); // Returns the pawn that owns this projectile .. this is set in ProjectileWeapon::Fire
+	if (FiringPawn && HasAuthority())
+	{
+		AController* FiringController = FiringPawn->GetController();
+		if (FiringController)
+		{
+			UGameplayStatics::ApplyRadialDamageWithFalloff( // this has 2 radii, 1 inner that takes in full base damage, 1 outer that takes the minimum damage
+				this, // World context object
+				Damage, // Base damage
+				10.f, // Minimum damage
+				GetActorLocation(), // Origin (center)
+				DamageInnerRadius, // Inner radius
+				DamageOuterRadius, // Outer radius
+				1.f, // Damage fallof .. 1 means linear
+				UDamageType::StaticClass(), // DamageTypeClass
+				TArray<AActor*>(), // Ignoreactors, we pass in an empty array
+				this, // Damage causer
+				FiringController // InstigatorController
+			);
+		}
+	}
+
+}
+
 void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AProjectile::StartDestroyTimer()
+{
+	GetWorldTimerManager().SetTimer(
+		DestroyTimer,
+		this,
+		&AProjectile::DestroyTimerFinished,
+		DestroyTime);
+
+}
+
+void AProjectile::DestroyTimerFinished()
+{
+	Destroy();
 }
 
 // Called when the projectile is destroyed from OnHit, as destruction of a replicated actor is propagated to clients, and AActor::Destroyed is called on server and all clients

@@ -18,6 +18,10 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	void StartDestroyTimer();
+	void DestroyTimerFinished();
+	void SpawnTrailSystem();
+	void ExplodeDamage();
 
 	// @ NormalImpulse: Impulse generated in the direction of the normal to the surface being hit
 	UFUNCTION()
@@ -35,9 +39,23 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* CollisionBox;
 
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* TrailSystem;
+
+	UPROPERTY()
+	class UNiagaraComponent* TrailSystemComponent;
+
 	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* ProjectileMesh;
+
+	UPROPERTY(EditAnywhere)
+	float DamageInnerRadius = 200.f;
+
+	UPROPERTY(EditAnywhere)
+	float DamageOuterRadius = 500.f;
 private:
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* Tracer;
@@ -45,7 +63,10 @@ private:
 	UPROPERTY()
 	class UParticleSystemComponent* TracerComponent; // Storing the tracer in this variable once spawned
 
+	FTimerHandle DestroyTimer;
 
+	UPROPERTY(EditAnywhere)
+	float DestroyTime = 3.f;
 	
 
 };
