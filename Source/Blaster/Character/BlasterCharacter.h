@@ -25,6 +25,7 @@ public:
 	void PlayFireMontage(bool bAiming);
 	void PlayReloadMontage();
 	void PlayElimMontage();
+	void PlayThrowGrenadeMontage();
 
 	virtual void OnRep_ReplicatedMovement() override;
 
@@ -57,6 +58,7 @@ protected:
 	void AimButtonReleased();
 	void FireButtonPressed();
 	void FireButtonReleased();
+	void GrenadeButtonPressed();
 
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
@@ -118,6 +120,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* ElimMontage;
 
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ThrowGrenadeMontage;
 
 	// Hides the character when we are backed up against a wall and can't see anything except our char
 	void HideCameraIfCharacterClose();
