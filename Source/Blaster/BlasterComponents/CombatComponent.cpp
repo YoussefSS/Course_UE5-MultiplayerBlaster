@@ -181,7 +181,7 @@ void UCombatComponent::ReloadEmptyWeapon()
 void UCombatComponent::Reload()
 {
 	// we do this check, because if carried ammo is 0, there is no need to take up bandwidth on the server and send an RPC. Also check if we are not already reloading
-	if (CarriedAmmo > 0 && CombatState == ECombatState::ECS_Unoccupied)
+	if (CarriedAmmo > 0 && CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon && !EquippedWeapon->IsFull())
 	{
 		ServerReload();
 	}

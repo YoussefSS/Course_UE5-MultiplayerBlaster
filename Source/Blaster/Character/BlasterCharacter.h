@@ -193,6 +193,13 @@ protected:
 	UPROPERTY()
 	class ABlasterPlayerState* BlasterPlayerState;
 
+	/*
+	* Grenade
+	*/
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* AttachedGrenade;
+
 public:	
 	// This function is only called on the server through AWeapon::BeginPlay OnComponentBegin/EndOverlap
 	void SetOverlappingWeapon(AWeapon* Weapon);
