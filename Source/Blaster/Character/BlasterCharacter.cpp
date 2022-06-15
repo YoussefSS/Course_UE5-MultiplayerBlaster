@@ -258,6 +258,7 @@ void ABlasterCharacter::PlayHitReactMontage()
 // Only called on the server
 void ABlasterCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser)
 {
+	if (bElimmed) return;
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 
 	UpdateHUDHealth();
