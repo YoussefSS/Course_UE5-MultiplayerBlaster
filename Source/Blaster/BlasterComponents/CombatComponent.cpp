@@ -258,10 +258,18 @@ void UCombatComponent::ThrowGrenadeFinished()
 void UCombatComponent::LaunchGrenade()
 {
 	ShowAttachedGrenade(false);
-	if (Character && Character->HasAuthority() && GrenadeClass && Character->GetAttachedGrenade())
+	if (Character && Character->IsLocallyControlled()) // LaunchGrenade is called on all machines from the anim notify in the animblueprint, so we check if we are locally controlled
+	{
+		ServerLaunchGrenade(HitTarget);
+	}
+}
+
+void UCombatComponent::ServerLaunchGrenade_Implementation(const FVector_NetQuantize& Target)
+{
+	if (Character && GrenadeClass && Character->GetAttachedGrenade())
 	{
 		const FVector StartingLocation = Character->GetAttachedGrenade()->GetComponentLocation();
-		FVector ToTarget = HitTarget - StartingLocation;
+		FVector ToTarget = Target - StartingLocation;
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = Character;
 		SpawnParams.Instigator = Character;
@@ -269,7 +277,7 @@ void UCombatComponent::LaunchGrenade()
 		if (World)
 		{
 			World->SpawnActor<AProjectile>(
-				GrenadeClass, 
+				GrenadeClass,
 				StartingLocation,
 				ToTarget.Rotation(),
 				SpawnParams
