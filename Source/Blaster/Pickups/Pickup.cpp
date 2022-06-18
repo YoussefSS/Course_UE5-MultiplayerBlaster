@@ -5,7 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Components/SphereComponent.h"
-
+#include "Blaster/Weapon/WeaponTypes.h"
 APickup::APickup()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -19,10 +19,14 @@ APickup::APickup()
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	OverlapSphere->AddLocalOffset(FVector(0, 0, 85.f));
 
 	PickupMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PickupMesh"));
 	PickupMesh->SetupAttachment(OverlapSphere);
 	PickupMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PickupMesh->SetRelativeScale3D(FVector(5, 5, 5));
+	PickupMesh->SetRenderCustomDepth(true);
+	PickupMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_PURPLE);
 }
 
 void APickup::BeginPlay()
@@ -39,6 +43,10 @@ void APickup::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (PickupMesh)
+	{
+		PickupMesh->AddWorldRotation(FRotator(0, BaseTurnRate * DeltaTime, 0));
+	}
 }
 
 void APickup::Destroyed()
