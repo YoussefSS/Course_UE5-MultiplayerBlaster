@@ -15,14 +15,20 @@ class BLASTER_API UBuffComponent : public UActorComponent
 public:	
 	UBuffComponent();
 	friend class ABlasterCharacter;
+	void Heal(float HealAmount, float HealingTime);
 
 protected:
 	virtual void BeginPlay() override;
+	void HealRampUp(float DeltaTime);
 
 private:
 
 	UPROPERTY()
 	class ABlasterCharacter* Character; // We want this to be set as early as possible, which is why we initialize this var in PostInitializeComponents on BlasterCharacter
+
+	bool bHealing = false;
+	float HealingRate = 0;
+	float AmountToHeal = 0;
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
