@@ -274,16 +274,16 @@ void ABlasterCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const 
 
 
 	float DamageToHealth = Damage;
-	if (Shield > 0)
+	if (Shield > 0.f)
 	{
 		if (Shield >= Damage)
 		{
 			Shield = FMath::Clamp(Shield - Damage, 0.f, MaxShield);
-			DamageToHealth = 0;
+			DamageToHealth = 0.f;
 		}
 		else
 		{
-			Shield = 0;
+			Shield = 0.f;
 			DamageToHealth = FMath::Clamp(DamageToHealth - Shield, 0.f, Damage);
 		}
 	}
