@@ -10,10 +10,11 @@
 UENUM(BlueprintType)
 enum class EWeaponState : uint8 
 {
-	EWS_Initial		UMETA(DisplayName = "InitialState"), // A state for when the weapon is sitting in the world, it has never been picked up yet, and our char can walk up to it and equip it
-	EWS_Equipped	UMETA(DisplayName = "Equipped"),
-	EWS_Dropped		UMETA(DisplayName = "Dropped"),
-	EWS_MAX			UMETA(DisplayName = "DefaultMAX")
+	EWS_Initial				UMETA(DisplayName = "InitialState"), // A state for when the weapon is sitting in the world, it has never been picked up yet, and our char can walk up to it and equip it
+	EWS_Equipped			UMETA(DisplayName = "Equipped"),
+	EWS_Dropped				UMETA(DisplayName = "Dropped"),
+	EWS_EquippedSecondary	UMETA(DisplayName = "Equipped Secondary"),
+	EWS_MAX					UMETA(DisplayName = "DefaultMAX")
 };
 
 UCLASS()
@@ -70,6 +71,10 @@ public:
 	bool bDestroyWeapon = false;
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnWeaponStateSet();
+	virtual void OnEquipped();
+	virtual void OnDropped();
+	virtual void OnEquippedSecondary();
 
 	UFUNCTION()
 	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

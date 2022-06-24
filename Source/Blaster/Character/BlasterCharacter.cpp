@@ -449,7 +449,14 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 	// No need to check for authority because we know a server RPC will only be executed on a server
 	if (Combat)
 	{
-		Combat->EquipWeapon(OverlappingWeapon);
+		if (OverlappingWeapon)
+		{
+			Combat->EquipWeapon(OverlappingWeapon);
+		}
+		else if(Combat->ShouldSwapWeapons()) // If not overlapping a weapon, switch primary with secondary
+		{
+			Combat->SwapWeapons();
+		}
 	}
 }
 
