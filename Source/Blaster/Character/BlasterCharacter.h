@@ -61,6 +61,8 @@ protected:
 	void FireButtonPressed();
 	void FireButtonReleased();
 	void GrenadeButtonPressed();
+	void DropOrDestroyWeapon(AWeapon* Weapon);
+	void DropOrDestroyWeapons();
 
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
