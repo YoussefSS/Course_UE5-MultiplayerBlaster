@@ -440,16 +440,7 @@ void ABlasterCharacter::EquipButtonPressed()
 
 	if (Combat)
 	{
-		if (HasAuthority())
-		{
-			Combat->EquipWeapon(OverlappingWeapon);
-		}
-		else
-		{
-			// We are the client, so call the RPC.
-			ServerEquipButtonPressed();
-		}
-		
+		ServerEquipButtonPressed(); // Calling this on both the server and client .. look at how server RPCs are called from server and client
 	}
 }
 
