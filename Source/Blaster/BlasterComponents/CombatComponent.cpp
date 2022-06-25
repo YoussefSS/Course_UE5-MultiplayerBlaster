@@ -101,6 +101,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 // called on server only
 void UCombatComponent::SwapWeapons()
 {
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
 	AWeapon* TempWeapon = EquippedWeapon;
 	EquippedWeapon = SecondaryWeapon;
 	SecondaryWeapon = TempWeapon;
@@ -517,6 +518,7 @@ void UCombatComponent::Fire()
 	{
 		bCanFire = false;
 		ServerFire(HitTarget); // We're already calculating HitTarget every frame
+		LocalFire(HitTarget); // Do the cosmetic stuff
 		if (EquippedWeapon)
 		{
 			CrosshairShootingFactor = .75f;
@@ -549,8 +551,14 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& Trac
 
 void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
+	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return; // This is the character controlled by the player who fired the weapon OR we are the server
+
+	LocalFire(TraceHitTarget);
+}
+
+void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
+{
 	if (EquippedWeapon == nullptr) return;
-	if (CombatState != ECombatState::ECS_Unoccupied) return;
 	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun) // 
 	{
 		Character->PlayFireMontage(bAiming);
