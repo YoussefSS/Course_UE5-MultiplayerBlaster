@@ -70,12 +70,17 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerCheckMatchState();
 
+	void CheckPing(float DeltaTime);
+
 	/**
 	 * The client will always join after some period of time has passed on the server, even if both joined together at the same time, the client will still have joined a second or so later
 	 * The client can also join when the game is in progress.. So all clients are joining mid game whatever time they join
 	 */
 	UFUNCTION(Client, Reliable)
 	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float Cooldown, float StartingTime);
+
+	void HighPingWarning();
+	void StopHighPingWarning();
 private:
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
@@ -114,4 +119,20 @@ private:
 	bool bInitializeCarriedAmmo = false;
 	float HUDWeaponAmmo;
 	bool bInitializeWeaponAmmo = false;
+
+
+
+	float HighPingRunningTime = 0.f;
+
+	// show the high ping animation for 5 sec maximum
+	UPROPERTY(EditAnywhere)
+	float HighPingDuration = 5.f; 
+
+	float PingAnimationRunningTime = 0;
+
+	UPROPERTY(EditAnywhere)
+	float CheckPingFrequency = 20.f;
+
+	UPROPERTY(EditAnywhere)
+	float HighPingThreshold = 50.f;
 };
