@@ -65,6 +65,9 @@ protected:
 	void OnRep_SecondaryWeapon();
 
 	void Fire();
+	void FireProjectileWeapon();
+	void FireHitScanWeapon();
+	void FireShotgun();
 	// Does cosmetic logic, so is safe to be called from anywhere
 	void LocalFire(const FVector_NetQuantize& TraceHitTarget);
 
