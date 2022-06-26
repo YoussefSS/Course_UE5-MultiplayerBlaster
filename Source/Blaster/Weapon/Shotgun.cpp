@@ -9,9 +9,9 @@
 #include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
 
-void AShotgun::Fire(const FVector& HitTarget)
+void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 {
-	AWeapon::Fire(HitTarget); // We don't want to call Super as that has its own linetrace, but we do want to play animation, spend bullet, etc..
+	AWeapon::Fire(FVector()); // We don't want to call Super as that has its own linetrace, but we do want to play animation, spend bullet, etc.. Also weapon class doesn't really use the HitTarget, that's why we passed in an empty one
 
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (OwnerPawn == nullptr) return;
@@ -20,19 +20,21 @@ void AShotgun::Fire(const FVector& HitTarget)
 	const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
 	if (MuzzleFlashSocket)
 	{
-		FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
-		FVector Start = SocketTransform.GetLocation();
+		const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
+		const FVector Start = SocketTransform.GetLocation();
 
-		TMap<ABlasterCharacter*, uint32> HitMap; // A TMap for how many times a character was hit
-		for (uint32 i = 0; i < NumberOfPellets; i++)
+		// Maps hit character to number of times hit
+		TMap<ABlasterCharacter*, uint32> HitMap;
+		for (FVector_NetQuantize HitTarget : HitTargets)
 		{
 			FHitResult FireHit;
 			WeaponTraceHit(Start, HitTarget, FireHit);
 
+			// We fill the map for clients for cosmetic effects
 			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor());
-			if (BlasterCharacter && HasAuthority() && InstigatorController)
+			if (BlasterCharacter)
 			{
-				if (HitMap.Contains(BlasterCharacter)) 
+				if (HitMap.Contains(BlasterCharacter))
 				{
 					HitMap[BlasterCharacter]++; // Increase hits for that specific character .. we do this instead of applying damage for every loop to save on performance
 				}
@@ -40,27 +42,28 @@ void AShotgun::Fire(const FVector& HitTarget)
 				{
 					HitMap.Emplace(BlasterCharacter, 1);
 				}
-			}
 
-			if (ImpactParticles)
-			{
-				UGameplayStatics::SpawnEmitterAtLocation(
-					GetWorld(),
-					ImpactParticles,
-					FireHit.ImpactPoint,
-					FireHit.ImpactNormal.Rotation()
-				);
-			}
 
-			if (HitSound)
-			{
-				UGameplayStatics::PlaySoundAtLocation(
-					this,
-					HitSound,
-					FireHit.ImpactPoint,
-					.5f,
-					FMath::FRandRange(-.5f, .5f)
-				);
+				if (ImpactParticles)
+				{
+					UGameplayStatics::SpawnEmitterAtLocation(
+						GetWorld(),
+						ImpactParticles,
+						FireHit.ImpactPoint,
+						FireHit.ImpactNormal.Rotation()
+					);
+				}
+
+				if (HitSound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(
+						this,
+						HitSound,
+						FireHit.ImpactPoint,
+						.5f,
+						FMath::FRandRange(-.5f, .5f)
+					);
+				}
 			}
 		}
 
@@ -71,19 +74,22 @@ void AShotgun::Fire(const FVector& HitTarget)
 				if (HitPair.Key && HasAuthority() && InstigatorController)
 				{
 					UGameplayStatics::ApplyDamage(
-						HitPair.Key, // damaged actor
-						Damage * HitPair.Value,
-						InstigatorController, // instigator
-						this, // damage causer
+						HitPair.Key, // Character that was hit
+						Damage * HitPair.Value, // Multiply damage by number of times hit
+						InstigatorController,
+						this,
 						UDamageType::StaticClass()
 					);
 				}
 			}
 		}
 	}
+
+
+
 }
 
-void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector>& HitTargets)
+void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets)
 {
 	// We are doing all of these here so we don't have to repeat them in the for loop through TraceEndWithScatter
 	const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
