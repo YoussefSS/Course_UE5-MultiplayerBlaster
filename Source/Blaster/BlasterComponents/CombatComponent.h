@@ -129,8 +129,13 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_SecondaryWeapon)
 	AWeapon* SecondaryWeapon;
 
-	UPROPERTY(Replicated)
-	bool bAiming;
+	UPROPERTY(ReplicatedUsing = OnRep_Aiming)
+	bool bAiming = false; // the official bAiming boolean
+
+	bool bAimButtonPressed = false;// locally controlled only bAiming boolean, represents the value of whether or not we are holding down the aiming button
+
+	UFUNCTION()
+	void OnRep_Aiming();
 
 	UPROPERTY(EditAnywhere)
 	float BaseWalkSpeed;
