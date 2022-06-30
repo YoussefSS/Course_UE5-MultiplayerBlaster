@@ -141,17 +141,25 @@ private:
 	float ZoomInterpSpeed = 20.f;
 
 
-	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_Ammo)
+	UPROPERTY(EditAnywhere)
 	int32 Ammo;
 
-	UFUNCTION()
-	void OnRep_Ammo();
+	// Whenever we spend a round, we're gonna call this RPC
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateAmmo(int32 ServerAmmo);
+
+	UFUNCTION(Client, Reliable)
+	void ClientAddAmmo(int32 AmmoToAdd);
 
 	// Subtracts 1 from ammo
 	void SpendRound();
 
 	UPROPERTY(EditAnywhere)
 	int32 MagCapacity;
+
+	// The nuymber of unprocessed server requests for ammo
+	// Incremented in SpendRound, decremented in ClientUpdateAmmo
+	int32 Sequence = 0;
 
 	UPROPERTY()
 	class ABlasterCharacter* BlasterOwnerCharacter;

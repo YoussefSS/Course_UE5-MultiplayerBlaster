@@ -66,7 +66,6 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
-	DOREPLIFETIME(AWeapon, Ammo); // We replicate for all clients, because when the weapon drops we want it to have the remaining ammo count
 }
 
 // Called on server only (look at beginplay)
@@ -106,12 +105,44 @@ void AWeapon::SetHUDAmmo()
 void AWeapon::SpendRound()
 {
 	Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
+	SetHUDAmmo();
+	if (HasAuthority())
+	{
+		ClientUpdateAmmo(Ammo);
+	}
+	else // As a client, we know we spent a round, and that the servers replication hasn't yet reached us. And once it does, ClientUpdateAmmo will be called
+	{
+		++Sequence;
+	}
+}
 
+void AWeapon::ClientUpdateAmmo_Implementation(int32 ServerAmmo)
+{
+	if (HasAuthority()) return;
+
+	// SERVER RECONCILIATION
+
+	Ammo = ServerAmmo; // First set the ammo value to the authoritative value
+	--Sequence; // We know we just received a processed server response, so decrement sequence. 
+
+	// Perform the correction based on how many unprocessed requests we've sent
+	Ammo -= Sequence; // Sequence represents how many rounds we spend, that the replication for hasn't yet reached us. So we know we spent as many rounds as sequence
 	SetHUDAmmo();
 }
 
-void AWeapon::OnRep_Ammo()
+// Only called from the server from CombatComponent::ServerReload
+void AWeapon::AddAmmo(int32 AmmoToAdd)
 {
+	Ammo = FMath::Clamp(Ammo + AmmoToAdd, 0, MagCapacity);
+	SetHUDAmmo();
+	ClientAddAmmo(AmmoToAdd); // This function is only called on the server anyway
+}
+
+void AWeapon::ClientAddAmmo_Implementation(int32 AmmoToAdd)
+{
+	if (HasAuthority()) return;
+
+	Ammo = FMath::Clamp(Ammo + AmmoToAdd, 0, MagCapacity);
 	BlasterOwnerCharacter = BlasterOwnerCharacter == nullptr ? Cast<ABlasterCharacter>(GetOwner()) : BlasterOwnerCharacter;
 	if (BlasterOwnerCharacter && BlasterOwnerCharacter->GetCombat() && IsFull())
 	{
@@ -258,10 +289,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 		}
 	}
 
-	if (HasAuthority())
-	{
-		SpendRound();
-	}
+	SpendRound();
 	
 }
 
@@ -273,13 +301,6 @@ void AWeapon::Dropped()
 	SetOwner(nullptr);
 	BlasterOwnerCharacter = nullptr;
 	BlasterOwnerController = nullptr;
-}
-
-// Only called from the server from CombatComponent::ServerReload
-void AWeapon::AddAmmo(int32 AmmoToAdd)
-{
-	Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity); // Why are we subtracting instead of adding?
-	SetHUDAmmo();
 }
 
 void AWeapon::EnableCustomDepth(bool bEnable)
