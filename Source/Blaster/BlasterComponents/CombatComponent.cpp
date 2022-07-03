@@ -234,15 +234,18 @@ void UCombatComponent::ReloadEmptyWeapon()
 void UCombatComponent::Reload()
 {
 	// we do this check, because if carried ammo is 0, there is no need to take up bandwidth on the server and send an RPC. Also check if we are not already reloading
-	if (CarriedAmmo > 0 && CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon && !EquippedWeapon->IsFull())
+	if (CarriedAmmo > 0 && CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon && !EquippedWeapon->IsFull() && !bLocallyReloading)
 	{
 		ServerReload();
+		HandleReload();
+		bLocallyReloading = true;
 	}
 }
 
 void UCombatComponent::FinishReloading()
 {
 	if (Character == nullptr) return;
+	bLocallyReloading = false; // We are only using this locally, but it makes no difference if we set this on all machines, since its default value is false
 	if (Character->HasAuthority())
 	{
 		CombatState = ECombatState::ECS_Unoccupied;
@@ -362,12 +365,16 @@ void UCombatComponent::ServerReload_Implementation()
 	if (Character == nullptr || EquippedWeapon == nullptr) return;
 
 	CombatState = ECombatState::ECS_Reloading;
-	HandleReload();
+
+	if(!Character->IsLocallyControlled()) HandleReload(); // Don't call HandleReload twice if you are the server, it's called the first time in Reload()
 }
 
 void UCombatComponent::HandleReload()
 {
-	Character->PlayReloadMontage();
+	if (Character)
+	{
+		Character->PlayReloadMontage();
+	}
 }
 
 int32 UCombatComponent::AmountToReload()
@@ -390,7 +397,10 @@ void UCombatComponent::OnRep_CombatState()
 	switch (CombatState)
 	{
 	case ECombatState::ECS_Reloading:
-		HandleReload();
+		if (Character && !Character->IsLocallyControlled())
+		{
+			HandleReload(); // Only play the reload animation if we are not locally controlled, as we already play it in Reload() (client-side prediction)
+		}
 		break;
 	case ECombatState::ECS_Unoccupied:
 		if (bFireButtonPressed)
@@ -770,7 +780,7 @@ void UCombatComponent::OnRep_Aiming()
 {
 	if (Character && Character->IsLocallyControlled())
 	{
-		bAiming = bAimButtonPressed;
+		bAiming = bAimButtonPressed; // This has the same effect as NOT replicating bAiming for the *local* client. We do that so we don't get the double zoom issue (lec 184)
 	}
 }
 
@@ -824,6 +834,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 bool UCombatComponent::CanFire()
 {
 	if (EquippedWeapon == nullptr) return false;
+	if (bLocallyReloading) return false;
 	if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun) return true;
 	return !EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied;
 }
