@@ -61,4 +61,10 @@ private:
 
 	UPROPERTY()
 	class ABlasterPlayerController* Controller;
+
+	// No UPROPERTY, this is C++ only
+	TDoubleLinkedList<FFramePackage> FrameHistory;
+
+	UPROPERTY(EditAnywhere)
+	float MaxRecordTime = 4.f; // 4 seconds of frame history, normally we would want to store only about 400ms, but this is for demonstration purpose
 };
