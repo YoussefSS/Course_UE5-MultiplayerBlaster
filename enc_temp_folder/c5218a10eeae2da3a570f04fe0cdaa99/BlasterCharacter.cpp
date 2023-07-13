@@ -74,8 +74,7 @@ ABlasterCharacter::ABlasterCharacter()
 
 	head = CreateDefaultSubobject<UBoxComponent>(TEXT("head"));
 	head->SetupAttachment(GetMesh(), FName("head"));
-	head->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
-	// We disable collision as the sole purpose for this is SSR. When we do the rewind, we'll reposition and enable them for a single frame on the server while we do our tests
+	head->SetCollisionEnabled(ECollisionEnabled::NoCollision); // We disable collision as the sole purpose for this is SSR. When we do the rewind, we'll reposition and enable them for a single frame while we do our tests
 
 	pelvis = CreateDefaultSubobject<UBoxComponent>(TEXT("pelvis"));
 	pelvis->SetupAttachment(GetMesh(), FName("pelvis"));
