@@ -45,6 +45,11 @@ public:
 	void UpdateHUDAmmo();
 
 	void SpawnDefaultWeapon();
+
+	// An easy way to access all the hit boxes
+	UPROPERTY()
+	TMap<FName, class UBoxComponent*> HitCollisionBoxes;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -134,6 +139,8 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* foot_r;
+
+
 
  private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
