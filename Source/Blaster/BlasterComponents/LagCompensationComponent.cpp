@@ -40,6 +40,37 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package)
 	}
 }
 
+FFramePackage ULagCompensationComponent::InterpBetweenFrames(const FFramePackage& OlderFrame, const FFramePackage& YoungerFrame, float HitTime)
+{
+	// This function returns a new interpolated FFramePackage based on two frame packages and a time between them
+
+	const float Distance = YoungerFrame.Time - OlderFrame.Time;
+	const float InterpFraction = FMath::Clamp((HitTime - OlderFrame.Time) / Distance, 0.f, 1.f);
+
+	FFramePackage InterpFramePackage;
+	InterpFramePackage.Time = HitTime;
+
+	for (auto& YoungerPair : YoungerFrame.HitBoxInfo)
+	{
+		const FName& BoxInfoName = YoungerPair.Key;
+
+		const FBoxInformation& OlderBox = OlderFrame.HitBoxInfo[BoxInfoName]; // Retreive the box information corresponding to the name
+		const FBoxInformation& YoungerBox = YoungerFrame.HitBoxInfo[BoxInfoName]; // Or YougerPair.Value
+
+		// Now we interp between these 2 boxes for every pair
+		FBoxInformation InterpBoxInfo;
+
+		// Not in tick, we know the exact location of where we want to interp so we pass in 1 for delta time
+		InterpBoxInfo.Location = FMath::VInterpTo(OlderBox.Location, YoungerBox.Location, 1.f, InterpFraction); 
+		InterpBoxInfo.Rotation = FMath::RInterpTo(OlderBox.Rotation, YoungerBox.Rotation, 1.f, InterpFraction);
+		InterpBoxInfo.BoxExtent = YoungerBox.BoxExtent; // Box extent is the same for both
+
+		InterpFramePackage.HitBoxInfo.Add(BoxInfoName, InterpBoxInfo);
+	}
+
+	return InterpFramePackage;
+}
+
 void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, const FColor& Color)
 {
 	for (auto& BoxInfo : Package.HitBoxInfo)
