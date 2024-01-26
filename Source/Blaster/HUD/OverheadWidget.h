@@ -24,7 +24,5 @@ public:
 	void ShowPlayerNetRole(APawn* InPawn);
 
 protected:
-	/* Called when we transition to a different level or leave the current level
-	We can use this to remove this widget from the viewport */
-	virtual void OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld) override;
+	virtual void NativeDestruct() override;
 };
