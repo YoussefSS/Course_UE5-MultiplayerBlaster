@@ -15,6 +15,26 @@ AProjectileBullet::AProjectileBullet()
 	ProjectileMovementComponent->MaxSpeed = InitialSpeed;
 }
 
+#if WITH_EDITOR
+void AProjectileBullet::PostEditChangeProperty(FPropertyChangedEvent& Event)
+{
+	Super::PostEditChangeProperty(Event);
+
+	// Each UPROPERTY has a FName assigned to it behind the scenes, here we check if the changed property is the one we are looking for
+
+	FName ChangedPropertyName = Event.Property != nullptr ? Event.Property->GetFName() : NAME_None;
+	FName PropertyName = GET_MEMBER_NAME_CHECKED(AProjectileBullet, InitialSpeed); // Provide the class where the property exists (or a child of it) and the property itself
+	if (PropertyName == ChangedPropertyName)
+	{
+		if (ProjectileMovementComponent)
+		{
+			ProjectileMovementComponent->InitialSpeed = InitialSpeed;
+			ProjectileMovementComponent->MaxSpeed = InitialSpeed;
+		}
+	}
+}
+#endif
+
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner()); // We set the owner of Projectiles to a character in ProjectileWeapon
