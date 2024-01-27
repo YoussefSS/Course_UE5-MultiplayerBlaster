@@ -19,13 +19,14 @@ public:
 	/*
 	* Used with server-side rewind
 	*/
-
 	bool bUseServerSideRewind = false; // The projectile itself will be sending the server the request.
 	FVector_NetQuantize TraceStart;
 	FVector_NetQuantize100 InitialVelocity; // 100 means 2 decimal place of precision, so a little more accurate
 
 	UPROPERTY(EditAnywhere)
 	float InitialSpeed = 15000;
+
+	float Damage = 20.f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -37,9 +38,6 @@ protected:
 	// @ NormalImpulse: Impulse generated in the direction of the normal to the surface being hit
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-	UPROPERTY(EditAnywhere)
-	float Damage = 20.f;
 
 	UPROPERTY(EditAnywhere)
 	class UParticleSystem* ImpactParticles;
