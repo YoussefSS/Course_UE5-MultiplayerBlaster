@@ -39,10 +39,10 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 					SpawnedProjectile->bUseServerSideRewind = false;
 					SpawnedProjectile->Damage = Damage;
 				}
-				else // server, not locally controlled - spawn non-replicated projectile (ServerSideRewindProjectileClass), no SSR (just a visual for the host)
+				else // server, not locally controlled - spawn non-replicated projectile (ServerSideRewindProjectileClass), set SSR to true as SSR bullets will not cause damage on the server - check AProjectileBullet::OnHit
 				{
 					SpawnedProjectile = World->SpawnActor<AProjectile>(ServerSideRewindProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
-					SpawnedProjectile->bUseServerSideRewind = false;
+					SpawnedProjectile->bUseServerSideRewind = true;
 				}
 			}
 			else // client
@@ -53,7 +53,7 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 					SpawnedProjectile->bUseServerSideRewind = true;
 					SpawnedProjectile->TraceStart = SocketTransform.GetLocation();
 					SpawnedProjectile->InitialVelocity = SpawnedProjectile->GetActorForwardVector() * SpawnedProjectile->InitialSpeed;
-					SpawnedProjectile->Damage = Damage;
+					SpawnedProjectile->Damage = Damage; // Unecessary as the server will check the damage on the weapon
 				}
 				else // client, not locally controlled - spawn non-replicated projectile (ServerSideRewindProjectileClass), no SSR (just a visual for the host)
 				{
